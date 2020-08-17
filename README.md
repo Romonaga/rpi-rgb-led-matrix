@@ -5,7 +5,7 @@ A library to control commonly available 64x64, 32x32 or 16x32 RGB LED panels
 with the Raspberry Pi. Can support PWM up to 11Bit per channel, providing
 true 24bpp color with CIE1931 profile.
 
-Supports 3 chains with many panels each.
+Supports 3 chains with many panels each on a regular Pi.
 On a Raspberry Pi 2 or 3, you can easily chain 12 panels in that chain
 (so 36 panels total), but you can theoretically stretch that to up
 to 96-ish panels (32 chain length) and still reach
@@ -40,10 +40,11 @@ All Raspberry Pi versions supported
 -----------------------------------
 
 This supports the old Raspberry Pi's Version 1 with 26 pin header and also the
-B+ models, the Pi Zero, as well as the Raspberry Pi 2 and 3 with 40 pins.
+B+ models, the Pi Zero, Raspberry Pi 2 and 3 with 40 pins, as well as the
+Compute Modules which have 44 GPIOs.
 The 26 pin models can drive one chain of RGB panels, the 40 pin models
 **up to three** chains in parallel (each chain 12 or more panels long).
-
+The Compute Module can drive **up to 6 chains in parallel**.
 The Raspberry Pi 2 and 3 are faster and generally perferred to the older
 models (and the Pi Zero). With the faster models, the panels sometimes
 can't keep up with the speed; check out
@@ -181,6 +182,7 @@ This can have values such as
   - `--led-gpio-mapping=regular` The standard mapping of this library, described in the [wiring](./wiring.md) page.
   - `--led-gpio-mapping=adafruit-hat` The Adafruit HAT/Bonnet, that uses this library or
   - `--led-gpio-mapping=adafruit-hat-pwm` Adafruit HAT with the anti-flicker hardware mod [described below](#improving-flicker).
+  - `--led-gpio-mapping=compute-module` Additional 3 parallel chains can be used with the Compute Module.
 
 Learn more about the mappings in the [wiring documentation](wiring.md#alternative-hardware-mappings).
 
@@ -208,7 +210,7 @@ The next most important flags describe the type and number of displays connected
 --led-rows=<rows>        : Panel rows. Typically 8, 16, 32 or 64. (Default: 32).
 --led-cols=<cols>        : Panel columns. Typically 32 or 64. (Default: 32).
 --led-chain=<chained>    : Number of daisy-chained panels. (Default: 1).
---led-parallel=<parallel>: For A/B+ models or RPi2,3b: parallel chains. range=1..3 (Default: 1).
+--led-parallel=<parallel>: For A/B+ models or RPi2,3b: parallel chains. range=1..3 (Default: 1, 6 for Compute Module).
 ```
 
 These are the most important ones: here you choose how many panels you have
@@ -240,7 +242,7 @@ If you have some 'outdoor' panels or panels with different multiplexing,
 the following will be useful:
 
 ```
---led-multiplexing=<0..10> : Mux type: 0=direct; 1=Stripe; 2=Checkered; 3=Spiral; 4=ZStripe; 5=ZnMirrorZStripe; 6=coreman; 7=Kaler2Scan; 8=ZStripeUneven; 9=P10-128x4-Z; 10=QiangLiQ8 (Default: 0)
+--led-multiplexing=<0..17> : Mux type: 0=direct; 1=Stripe; 2=Checkered...
 ```
 
 The outdoor panels have different multiplexing which allows them to be faster
@@ -266,7 +268,7 @@ two chained panels, so then you'd use
 `--led-rows=32 --led-cols=32 --led-chain=2 --led-multiplexing=1`;
 
 ```
---led-row-addr-type=<0..3>: 0 = default; 1 = AB-addressed panels; 2 = direct row select; 3 = ABC-addressed panels (Default: 0).
+--led-row-addr-type=<0..4>: 0 = default; 1 = AB-addressed panels; 2 = direct row select; 3 = ABC-addressed panels; 4 = ABC Shift + DE direct (Default: 0).
 ```
 
 This option is useful for certain 64x64 or 32x16 panels. For 64x64 panels,
@@ -724,8 +726,8 @@ utilize it then. Still, I'd typically recommend it.
 
 Performance improvements and limits
 -----------------------------------
-Regardless of which driving hardware you use, ultimately you can only push pixels 
-so fast to a string of panels before you get flickering due to too low a refresh 
+Regardless of which driving hardware you use, ultimately you can only push pixels
+so fast to a string of panels before you get flickering due to too low a refresh
 rate (less than 80-100Hz), or before you refresh the panel lines too fast and they
 appear too dim because each line is not displayed long enough before it is turned off.
 
@@ -735,20 +737,20 @@ Basic performance tips:
 - led-pwm-dither-bits=1 gives you a speed boost but less brightness
 - led-pwm-lsb-nanoseconds=50 also gives you a speed boost but less brightness
 - led-pwm-bits=7 or even lower decrease color depth but increases refresh speed
-- AB panels and other panels with that use values of led-multiplexing bigger than 0, 
+- AB panels and other panels with that use values of led-multiplexing bigger than 0,
 will also go faster, although as you tune more options given above, their advantage will decrease.
 - 32x16 ABC panels are faster than ABCD which are faster than ABCDE, which are faster than 128x64 ABC panels
 (which do use 5 address lines, but over only 3 wires)
 - Use at least an rPi3 (rPi4 is still slightly faster but may need --led-slowdown-gpio=2)
 
 Maximum resolutions reasonably achievable:
-A general rule of thumb is that running 16K pixels (128x128 or otherwise) on a single chain, 
-is already pushing limits and you will have to make tradeoffs in visual quality. 32K pixels 
-(like 128x256) is definitely pushing things and you'll get 100Hz or less depending on the 
-performance options you choose.  
-This puts the maximum reasonable resolution around 100K pixels (like 384x256) for 3 chains. 
-You can see more examples and video capture of speed on [Marc MERLIN's page 'RGB Panels, from 192x80, to 384x192, to 384x256 and maybe not much beyond'](http://marc.merlins.org/perso/arduino/post_2020-03-13_RGB-Panels_-from-192x80_-to-384x192_-to-384x256-and-maybe-not-much-beyond.html)  
-If your refresh rate is below 300Hz, expect likely black bars when taking cell phone pictures. 
+A general rule of thumb is that running 16K pixels (128x128 or otherwise) on a single chain,
+is already pushing limits and you will have to make tradeoffs in visual quality. 32K pixels
+(like 128x256) is definitely pushing things and you'll get 100Hz or less depending on the
+performance options you choose.
+This puts the maximum reasonable resolution around 100K pixels (like 384x256) for 3 chains.
+You can see more examples and video capture of speed on [Marc MERLIN's page 'RGB Panels, from 192x80, to 384x192, to 384x256 and maybe not much beyond'](http://marc.merlins.org/perso/arduino/post_2020-03-13_RGB-Panels_-from-192x80_-to-384x192_-to-384x256-and-maybe-not-much-beyond.html)
+If your refresh rate is below 300Hz, expect likely black bars when taking cell phone pictures.
 A real camera with shutter speed lowered accordingly, will get around this.
 
 Ultimately, you should not expect to go past 64K pixels using 3 chains without significant

@@ -129,6 +129,14 @@ HARDWARE_DESC?=regular
 # Flag: --led-limit-refresh
 #DEFINES+=-DFIXED_FRAME_MICROSECONDS=5000
 
+# Enable wide 64 bit GPIO offered with the compute module.
+# This will use more memory to internally represent the frame buffer, so
+# caches can't be utilized as much.
+# So only switch this on if you really use the compute module and use more
+# than 3 parallel chains.
+# (this is untested right now, waiting for hardware to arrive for testing)
+#DEFINES+=-DENABLE_WIDE_GPIO_COMPUTE_MODULE
+
 # ---- Pinout options for hardware variants; usually no change needed here ----
 
 # Uncomment if you want to use the Adafruit HAT with stable PWM timings.
@@ -157,7 +165,7 @@ DEFINES+=$(USER_DEFINES)
 
 DEFINES+=-DDEFAULT_HARDWARE='"$(HARDWARE_DESC)"'
 INCDIR=../include
-CFLAGS=-Wall -O3 -g -fPIC $(DEFINES) -Wextra -Wno-unused-parameter
+CFLAGS=-W -Wall -Wextra -Wno-unused-parameter -O3 -g -fPIC $(DEFINES)
 CXXFLAGS=$(CFLAGS) -fno-exceptions
 
 all : $(TARGET).a $(TARGET).so.1
